@@ -24,7 +24,7 @@ public class WebConfig {
                         "http://localhost:3000",
                         "http://localhost:8080"
                     )
-                    .allowedMethods("GET");
+                    .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE");
             }
         };
     }

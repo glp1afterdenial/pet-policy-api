@@ -1,5 +1,7 @@
 package com.thepointspup.petpolicyapi.model;
 
+import java.time.LocalDateTime;
+
 public class HotelChain {
 
     private String id;
@@ -13,6 +15,7 @@ public class HotelChain {
     private String verdict;
     private String rating;
     private String websiteUrl;
+    private LocalDateTime lastUpdated;
 
     public HotelChain() {}
 
@@ -31,6 +34,7 @@ public class HotelChain {
         this.verdict = verdict;
         this.rating = rating;
         this.websiteUrl = websiteUrl;
+        this.lastUpdated = LocalDateTime.now();
     }
 
     public String getId() { return id; }
@@ -65,4 +69,7 @@ public class HotelChain {
 
     public String getWebsiteUrl() { return websiteUrl; }
     public void setWebsiteUrl(String websiteUrl) { this.websiteUrl = websiteUrl; }
+
+    public LocalDateTime getLastUpdated() { return lastUpdated; }
+    public void setLastUpdated(LocalDateTime lastUpdated) { this.lastUpdated = lastUpdated; }
 }

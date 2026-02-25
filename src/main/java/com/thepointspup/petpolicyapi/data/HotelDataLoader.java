@@ -3,12 +3,14 @@ package com.thepointspup.petpolicyapi.data;
 import com.thepointspup.petpolicyapi.model.HotelChain;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class HotelDataLoader {
 
-    private final List<HotelChain> hotels = List.of(
+    private final List<HotelChain> hotels = new ArrayList<>(List.of(
         new HotelChain(
             "kimpton",
             "Kimpton Hotels",
@@ -217,9 +219,27 @@ public class HotelDataLoader {
             "good",
             "https://www.fourseasons.com"
         )
-    );
+    ));
 
     public List<HotelChain> getAllHotels() {
         return hotels;
+    }
+
+    public Optional<HotelChain> findById(String id) {
+        return hotels.stream()
+            .filter(h -> h.getId().equalsIgnoreCase(id))
+            .findFirst();
+    }
+
+    public boolean existsById(String id) {
+        return hotels.stream().anyMatch(h -> h.getId().equalsIgnoreCase(id));
+    }
+
+    public void add(HotelChain hotel) {
+        hotels.add(hotel);
+    }
+
+    public boolean removeById(String id) {
+        return hotels.removeIf(h -> h.getId().equalsIgnoreCase(id));
     }
 }
