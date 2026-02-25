@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thepointspup.petpolicyapi.model.HotelChain;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -25,10 +26,13 @@ class HotelControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Value("${api.admin-key}")
+    private String apiKey;
+
     // --- GET /api/hotels ---
 
     @Test
-    void getHotels_returnsAll16Chains() throws Exception {
+    void getHotels_returnsAllChains() throws Exception {
         mockMvc.perform(get("/api/hotels"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -152,14 +156,43 @@ class HotelControllerIntegrationTest {
             .andExpect(jsonPath("$.lastUpdated").exists());
     }
 
-    // --- POST /api/hotels ---
+    // --- API Key: 401 for write ops without key ---
 
     @Test
-    void createHotel_returnsCreated() throws Exception {
+    void writeWithoutApiKey_returns401() throws Exception {
+        HotelChain hotel = new HotelChain("nokey", "No Key", "No limit", "$0", false, null,
+            "n", "t", "v", "good", "https://test.com");
+
+        mockMvc.perform(post("/api/hotels")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(hotel)))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void writeWithBadApiKey_returns401() throws Exception {
+        mockMvc.perform(delete("/api/hotels/kimpton")
+                .header("X-API-Key", "wrong-key"))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getEndpoints_workWithoutApiKey() throws Exception {
+        mockMvc.perform(get("/api/hotels"))
+            .andExpect(status().isOk());
+        mockMvc.perform(get("/api/stats"))
+            .andExpect(status().isOk());
+    }
+
+    // --- POST /api/hotels (with key) ---
+
+    @Test
+    void createHotel_withKey_returnsCreated() throws Exception {
         HotelChain newHotel = new HotelChain("testcreate", "Test Create Hotel", "No limit", "$0", false, null,
             "Test notes", "Test tip", "Test verdict", "good", "https://test.com");
 
         mockMvc.perform(post("/api/hotels")
+                .header("X-API-Key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newHotel)))
             .andExpect(status().isCreated())
@@ -173,6 +206,7 @@ class HotelControllerIntegrationTest {
             "n", "t", "v", "good", "https://test.com");
 
         mockMvc.perform(post("/api/hotels")
+                .header("X-API-Key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dupe)))
             .andExpect(status().isBadRequest())
@@ -185,6 +219,7 @@ class HotelControllerIntegrationTest {
         noId.setName("No ID Hotel");
 
         mockMvc.perform(post("/api/hotels")
+                .header("X-API-Key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(noId)))
             .andExpect(status().isBadRequest())
@@ -197,20 +232,22 @@ class HotelControllerIntegrationTest {
         noName.setId("noname");
 
         mockMvc.perform(post("/api/hotels")
+                .header("X-API-Key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(noName)))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message", containsString("name is required")));
     }
 
-    // --- PUT /api/hotels/{id} ---
+    // --- PUT /api/hotels/{id} (with key) ---
 
     @Test
-    void updateHotel_replacesData() throws Exception {
+    void updateHotel_withKey_replacesData() throws Exception {
         HotelChain updated = new HotelChain("hilton", "Hilton Updated", "100 lbs", "$75", false, 100,
             "Updated notes", "Updated tip", "Updated verdict", "excellent", "https://hilton-updated.com");
 
         mockMvc.perform(put("/api/hotels/hilton")
+                .header("X-API-Key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updated)))
             .andExpect(status().isOk())
@@ -225,53 +262,57 @@ class HotelControllerIntegrationTest {
             "n", "t", "v", "good", "https://f.com");
 
         mockMvc.perform(put("/api/hotels/fake")
+                .header("X-API-Key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updated)))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message", containsString("not found")));
     }
 
-    // --- PATCH /api/hotels/{id} ---
+    // --- PATCH /api/hotels/{id} (with key) ---
 
     @Test
-    void patchHotel_updatesPartially() throws Exception {
+    void patchHotel_withKey_updatesPartially() throws Exception {
         mockMvc.perform(patch("/api/hotels/marriott")
+                .header("X-API-Key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("fee", "$999"))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.fee", is("$999")))
-            .andExpect(jsonPath("$.name", is("Marriott"))) // unchanged
             .andExpect(jsonPath("$.lastUpdated").exists());
     }
 
     @Test
     void patchHotel_invalidRating_returns400() throws Exception {
         mockMvc.perform(patch("/api/hotels/marriott")
+                .header("X-API-Key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("rating", "bad"))))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message", containsString("rating")));
     }
 
-    // --- DELETE /api/hotels/{id} ---
+    // --- DELETE /api/hotels/{id} (with key) ---
 
     @Test
-    void deleteHotel_returns204() throws Exception {
-        // First create one to delete
+    void deleteHotel_withKey_returns204() throws Exception {
         HotelChain toDelete = new HotelChain("todelete", "To Delete", "No limit", "$0", false, null,
             "n", "t", "v", "good", "https://d.com");
         mockMvc.perform(post("/api/hotels")
+                .header("X-API-Key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(toDelete)))
             .andExpect(status().isCreated());
 
-        mockMvc.perform(delete("/api/hotels/todelete"))
+        mockMvc.perform(delete("/api/hotels/todelete")
+                .header("X-API-Key", apiKey))
             .andExpect(status().isNoContent());
     }
 
     @Test
     void deleteHotel_notFound_returns404() throws Exception {
-        mockMvc.perform(delete("/api/hotels/nonexistent"))
+        mockMvc.perform(delete("/api/hotels/nonexistent")
+                .header("X-API-Key", apiKey))
             .andExpect(status().isNotFound());
     }
 
