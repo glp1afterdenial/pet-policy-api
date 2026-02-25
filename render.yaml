@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: pet-policy-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/stats
+    envVars:
+      - key: SERVER_PORT
+        value: 8080
