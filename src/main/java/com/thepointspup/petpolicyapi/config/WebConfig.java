@@ -17,6 +17,9 @@ public class WebConfig {
                     .allowedOrigins(
                         "https://thepointspup.com",
                         "https://www.thepointspup.com",
+                        "https://daniellefuglestad.dev",
+                        "https://www.daniellefuglestad.dev",
+                        "https://pet-policy-api.onrender.com",
                         "http://localhost:1313",
                         "http://localhost:3000",
                         "http://localhost:8080"
