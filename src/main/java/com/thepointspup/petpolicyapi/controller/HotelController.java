@@ -33,6 +33,15 @@ public class HotelController {
             @RequestParam(required = false) String rating,
             @Parameter(description = "Search by chain name or notes (case-insensitive)")
             @RequestParam(required = false) String search) {
+        if (minWeight != null && minWeight < 0) {
+            throw new IllegalArgumentException("minWeight must be a non-negative number");
+        }
+        if (maxFee != null && maxFee < 0) {
+            throw new IllegalArgumentException("maxFee must be a non-negative number");
+        }
+        if (rating != null && !List.of("excellent", "good", "moderate").contains(rating.toLowerCase())) {
+            throw new IllegalArgumentException("rating must be one of: excellent, good, moderate");
+        }
         return hotelService.getHotels(minWeight, maxFee, rating, search);
     }
 
