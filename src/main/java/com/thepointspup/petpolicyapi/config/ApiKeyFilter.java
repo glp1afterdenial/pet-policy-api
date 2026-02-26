@@ -25,7 +25,10 @@ public class ApiKeyFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
 
-        if (req.getRequestURI().startsWith("/api/") && WRITE_METHODS.contains(req.getMethod())) {
+        boolean isVoteEndpoint = "POST".equals(req.getMethod())
+                && req.getRequestURI().matches("/api/polls/[^/]+/vote");
+
+        if (req.getRequestURI().startsWith("/api/") && WRITE_METHODS.contains(req.getMethod()) && !isVoteEndpoint) {
             String provided = req.getHeader("X-API-Key");
             if (provided == null || !provided.equals(adminKey)) {
                 res.setStatus(401);
